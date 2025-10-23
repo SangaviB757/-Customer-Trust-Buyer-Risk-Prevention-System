@@ -1,7 +1,7 @@
 create view transaction_risk_flagged as
 
--- Back-to-back transactions within 10–15 minutes from different IPs ------- Rapid Fire Transaction----
-
+-- 1) Back-to-back transactions within 10–15 minutes from different IPs 
+    
 with H_Risky_behaviour as (
     with cte as (
         select *,
@@ -21,7 +21,7 @@ with H_Risky_behaviour as (
       and ip_address != previous_ip_address
 ),
 
--- Transactions on same day with multiple IP addresses  ---- ip_fraud
+-- 2) Transactions on same day with multiple IP addresses  ---- ip_fraud
 
 Multiple_ip as (
     select distinct transaction_id
@@ -38,7 +38,7 @@ Multiple_ip as (
       and ip_address != previous_ip_address
 ),
 
--- Device ID / IP mismatch between transaction and login on same date login_transaction_device_mismatch
+-- 3) Device ID / IP mismatch between transaction and login on same date login_transaction_device_mismatch
 
 
 login_transaction_Ipmismatch as (
@@ -53,7 +53,7 @@ login_transaction_Ipmismatch as (
        or l.ip_city   != t.billing_city
 ),
 
--- Purchasing high-value products (top 5% per category)  High_value_products
+-- 4) Purchasing high-value products (top 5% per category)  High_value_products
 
 high_value_purchase as (
     with High_value_Products as (
@@ -73,7 +73,7 @@ high_value_purchase as (
     where product_id in (select product_id from High_value_Products)
 ),
 
--- Chargeback amount inconsistent with transaction amount  
+-- 5) Chargeback amount inconsistent with transaction amount
 
 chargeback_amt_mismatch as (
     with chargeback_claim as (
@@ -94,7 +94,8 @@ chargeback_amt_mismatch as (
        or chargeback_amount >= rolling_max
 ),
 
--- COD order marked delivered but refund claimed (Item not received)
+-- 6) COD order marked delivered but refund claimed (Item not received)
+
 not_delievered_refund as (
     select t.transaction_id
     from transactions as t
@@ -106,7 +107,8 @@ not_delievered_refund as (
       and t.billing_city = c.city
 ),
 
--- Multiple payment methods in short span (> 2 methods in 24h)
+-- 7) Multiple payment methods in short span (> 2 methods in 24h)
+
 muliple_methods_pay as (
     select t1.transaction_id
     from transactions t1
@@ -117,7 +119,8 @@ muliple_methods_pay as (
     having count(distinct t2.payment_method) > 2
 ),
 
--- New customer placing high-value orders (≤ 7 days from join, top 2% product)
+-- 8) New customer placing high-value orders (≤ 7 days from join, top 2% product)
+
 new_cust_high_purchase as (
     with High_value_orders as (
         select product_id,
@@ -133,7 +136,8 @@ new_cust_high_purchase as (
       )
 ),
 
--- High quantity orders
+-- 9) High quantity orders
+
 high_quantity_order as (
     select t.transaction_id
     from transactions as t
@@ -141,8 +145,9 @@ high_quantity_order as (
     where quantity >= 7
 ),
 
--- Refund requested very soon after prepaid transaction (≤ 3 days, Late Delivery)
-late_delivery_refund as (
+-- 10) Refund requested very soon after prepaid transaction (≤ 3 days, Late Delivery)
+
+    late_delivery_refund as (
     with prepaid as (
         select distinct payment_method
         from transactions
