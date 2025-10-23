@@ -6,7 +6,7 @@ Description: SQL View to flag risky buyer transactions using 11 fraud detection 
 ============================================================
 */
 
-CREATE OR REPLACE VIEW transaction_risk_flagged AS
+CREATE VIEW transaction_risk_flagged AS
 
 -- ============================================================
 -- 1️) Rapid-Fire Transactions: Back-to-back within 10–15 minutes from different IPs
